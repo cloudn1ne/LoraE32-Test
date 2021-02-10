@@ -9,10 +9,12 @@ Module: https://www.bastelgarage.ch/wifi-lora-32-v2-sx1276-868mhz-mit-oled
 
 ### Downlink Example with Chirpstack
 
-mosquitto_pub -f test.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/devEui/command/down"
 
-test.mqtt - sending 8192 as payload
-`
+> mosquitto_pub -f test.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/devEui/command/down"
+
+test.mqtt:
+
+```js
 {
  "confirmed": false,
  "fPort": 3,
@@ -20,10 +22,10 @@ test.mqtt - sending 8192 as payload
 	"data": 8192
  }
 }
-`
+```
 
 ### Sample Device Profiles for Chirpstack
-
+```js
 function Decode(fPort, bytes, variables) {
   var counter;
   
@@ -38,4 +40,4 @@ function Encode(fPort, obj, variables) {
   b3 = obj.data & 0xFF;
   return [ b0, b1, b2, b3];
 }
-
+```
