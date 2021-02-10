@@ -1,0 +1,5 @@
+* Simple LoRAWAN Test for the Heltec WIFI LoRa 32 V2 module *
+
+Simple LoRaWAN Client that sends an incrementing 32bit number as payload, and will display any bytes downlinked (only about 6 fit on the display)
+You need to change DevEUI etc in main.cpp and configure the OTAA parameters in your LoraGateway Software.
+
