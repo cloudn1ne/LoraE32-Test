@@ -10,7 +10,7 @@ Module: https://www.bastelgarage.ch/wifi-lora-32-v2-sx1276-868mhz-mit-oled
 ### Downlink Example with Chirpstack
 
 
-> mosquitto_pub -f test.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/devEui/command/down"
+> mosquitto_pub -f test.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/<devEui>/command/down"
 
 test.mqtt:
 
