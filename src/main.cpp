@@ -68,7 +68,7 @@ void message(const uint8_t* payload, size_t size, int rssi)
     for (int i = 0; i < size; i++)
     {
         u8g2.setCursor(i*15,60);  
-        u8g2.printf("%X", payload[i]);        
+        u8g2.printf("%02X", payload[i]);        
     }
     u8g2.sendBuffer();
 }
