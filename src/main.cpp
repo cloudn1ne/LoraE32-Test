@@ -2,7 +2,8 @@
 #include <TTN_esp32.h>
 #include <U8g2lib.h>
 
-#define TX_DELAY_SEC 180
+#define LED_PIN      25
+#define TX_DELAY_SEC 120
 
 /***************************************************************************
  *  Go to your TTN console register a device then the copy fields
@@ -51,14 +52,19 @@ void spin_wheely(int x, int y)
 
 void message(const uint8_t* payload, size_t size, int rssi)
 {    
+    // bit 0 of lsb byte controls the LED
+    if (payload[3] & 1)
+      digitalWrite(LED_PIN, HIGH);
+    else
+      digitalWrite(LED_PIN, LOW);
+
     Serial.println("-- MESSAGE");
-    Serial.print("Received " + String(size) + " bytes RSSI=" + String(rssi) + "db");
+    Serial.print("Received " + String(size) + " bytes RSSI=" + String(rssi) + "db : [ ");
     for (int i = 0; i < size; i++)
     {
-        Serial.print(" " + String(payload[i]));
-        // Serial.write(payload[i]);
+        Serial.printf("%02X ", payload[i]);        
     }
-    Serial.println();
+    Serial.println(" ]");
 
     u8g2.setFont(u8g2_font_5x7_mf);
     u8g2.setCursor(0,45);        
@@ -85,25 +91,27 @@ void message_n_sent(uint32_t c)
 
 void setup()
 {
+    pinMode(LED_PIN, OUTPUT);           // set pin to input     
     u8g2.begin();
     banner();
     Serial.begin(115200);
     delay(2000);
     Serial.println("Starting\n");
-    ttn.begin();
+    ttn.begin();    
     ttn.onMessage(message); // Declare callback function for handling downlink
                             // messages from server
     ttn.join(devEui, appEui, appKey);
-    Serial.print("Joining TTN\n");
+    Serial.print("Joining Network\n");
     while (!ttn.isJoined())  // show a wheel while we wait for the Lora Join
     {
         Serial.print(".");        
         spin_wheely(120,30);
-        delay(500);
+        delay(250);
     }
     Serial.println("\njoined !\n");
     u8g2.clearBuffer();
     u8g2.sendBuffer();
+    ttn.setDataRate(EU868_DR_SF7);    
     ttn.showStatus();
 }
 
@@ -122,15 +130,14 @@ void loop()
       spin_wheely(120,20);
       u8g2.setCursor(95,20);  
       u8g2.printf("%03d", tx_delay_counter);            
-      u8g2.sendBuffer();
-
+      u8g2.sendBuffer();      
       delay(1000);
       tx_delay_counter--;  
     }
     else
     { // action
         tx_delay_counter = TX_DELAY_SEC;
-        if ( ttn.sendBytes(data, 4, 1, true) )
+        if ( ttn.sendBytes(data, 4, 1, false) )
         {      
           message_n_sent(tx_msg_count);       
           Serial.printf("Message #%d sent !\n", tx_msg_count);
