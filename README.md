@@ -9,20 +9,34 @@ Module: https://www.bastelgarage.ch/wifi-lora-32-v2-sx1276-868mhz-mit-oled
 
 ### Downlink Example with Chirpstack
 
+Bit 0 of the LSB is controlling GPIO25 (White LED on the Heltec Board) meaning you can turn it on/off via the downlink.
 
-> mosquitto_pub -f test.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/<devEui>/command/down"
+> mosquitto_pub -f on/off.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/<devEui>/command/down"
 
-test.mqtt:
+on.mqtt:
 
 ```js
 {
  "confirmed": false,
  "fPort": 3,
  "object": {
-	"data": 8192
+	"data": 1
  }
 }
 ```
+
+off.mqtt:
+
+```js
+{
+ "confirmed": false,
+ "fPort": 3,
+ "object": {
+	"data": 2
+ }
+}
+```
+
 
 ### Sample Device Profiles for Chirpstack
 ```js
