@@ -13,6 +13,8 @@ const char* devEui = "0000000000BABE01"; // TTN Device EUI
 const char* appEui = "000000000000AE01"; // Application EUI
 const char* appKey = "000000000000000000000000DEADBEEF"; // Application Key
 
+static bool led_on=false;
+
 // tx delay counter
 static uint16_t tx_delay_counter=TX_DELAY_SEC;
 
@@ -53,11 +55,10 @@ void spin_wheely(int x, int y)
 void message(const uint8_t* payload, size_t size, int rssi)
 {    
     // bit 0 of lsb byte controls the LED
-    if (payload[3] & 1)
-      digitalWrite(LED_PIN, HIGH);
-    else
-      digitalWrite(LED_PIN, LOW);
+    led_on = payload[3] & 1;
 
+    digitalWrite(LED_PIN, led_on);
+    
     Serial.println("-- MESSAGE");
     Serial.print("Received " + String(size) + " bytes RSSI=" + String(rssi) + "db : [ ");
     for (int i = 0; i < size; i++)
@@ -92,6 +93,7 @@ void message_n_sent(uint32_t c)
 void setup()
 {
     pinMode(LED_PIN, OUTPUT);           // set pin to input     
+    digitalWrite(LED_PIN, led_on);      // we start turned off (led_on=false)
     u8g2.begin();
     banner();
     Serial.begin(115200);
@@ -117,14 +119,15 @@ void setup()
 
 void loop()
 { 
-    uint8_t data[4];
+    uint8_t data[5];
 
     // tx payload is our tx_msg_count (32bit)
     data[0] = (tx_msg_count>>24)&0xFF;
     data[1] = (tx_msg_count>>16)&0xFF;
     data[2] = (tx_msg_count>>8)&0xFF;
-    data[3] = tx_msg_count&0xFF;    
-
+    data[3] = tx_msg_count&0xFF;        
+    data[4] = led_on;
+    
     if (tx_delay_counter > 0)
     { // delay
       spin_wheely(120,20);
@@ -137,7 +140,7 @@ void loop()
     else
     { // action
         tx_delay_counter = TX_DELAY_SEC;
-        if ( ttn.sendBytes(data, 4, 1, false) )
+        if ( ttn.sendBytes(data, 5, 1, false) )
         {      
           message_n_sent(tx_msg_count);       
           Serial.printf("Message #%d sent !\n", tx_msg_count);
