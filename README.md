@@ -11,7 +11,7 @@ Module: https://www.bastelgarage.ch/wifi-lora-32-v2-sx1276-868mhz-mit-oled
 
 Bit 0 of the LSB is controlling GPIO25 (White LED on the Heltec Board) meaning you can turn it on/off via the downlink.
 
-> mosquitto_pub -f on/off.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/<devEui>/command/down"
+``` mosquitto_pub -f on/off.mqtt -h <Chirpstack_HOST> -t "application/<chirpstack_ApplicationID>/device/<devEui>/command/down" ```
 
 on.mqtt:
 
