@@ -3,6 +3,8 @@
 #include <U8g2lib.h>
 
 #define LED_PIN      25
+#define VBAT_PIN     37
+#define VBAT_MEASURE_PIN 21
 #define TX_DELAY_SEC 120
 
 /***************************************************************************
@@ -17,9 +19,11 @@ static bool led_on=false;
 
 // tx delay counter
 static uint16_t tx_delay_counter=TX_DELAY_SEC;
+// current battery voltage
+static uint16_t bat_int;
 
 // tx message counter
-static uint32_t tx_msg_count = 0;
+static uint16_t tx_msg_count = 0;
 
 // wheely helpers
 const char wheely_ar[4]={'/', '-', '\\', '|'};
@@ -80,6 +84,32 @@ void message(const uint8_t* payload, size_t size, int rssi)
     u8g2.sendBuffer();
 }
 
+float getBatteryVoltageFloat(int bat_int)
+{
+  float voltageDivider = 338;
+  float ret_val;
+  // int readMin = 1080; // -> 338 * 3.2 // If you want to draw a progress bar, this is 0%
+  // int readMax = 1420; // -> 338 * 4.2 // If you want to draw a progress bar, this is 100%
+  ret_val = (bat_int/voltageDivider);
+  return ret_val; 
+}
+uint16_t getBatteryVoltage(int nbMeasurements) 
+{
+    uint16_t bat_int; // 12bit battery value (0-4095)
+
+    // Take x measurements and average
+    digitalWrite(VBAT_MEASURE_PIN, LOW);
+    int readValue = 0;
+    for (int i = 0; i < nbMeasurements; i++) {
+        readValue += analogRead(VBAT_PIN);
+        delay(100);
+    }
+    digitalWrite(VBAT_MEASURE_PIN, HIGH);
+
+    bat_int = (readValue/nbMeasurements); 
+    return bat_int;
+}
+
 void message_n_sent(uint32_t c)
 {
   u8g2.firstPage();
@@ -93,11 +123,14 @@ void message_n_sent(uint32_t c)
 void setup()
 {
     pinMode(LED_PIN, OUTPUT);           // set pin to input     
+    pinMode(VBAT_MEASURE_PIN, OUTPUT);           // set pin to input     
     digitalWrite(LED_PIN, led_on);      // we start turned off (led_on=false)
+    bat_int = getBatteryVoltage(10); 
     u8g2.begin();
     banner();
     Serial.begin(115200);
-    delay(2000);
+    delay(500);
+    Serial.printf("Battery: %1.3fV\n", getBatteryVoltageFloat(bat_int));    
     Serial.println("Starting\n");
     ttn.begin();    
     ttn.onMessage(message); // Declare callback function for handling downlink
@@ -118,27 +151,34 @@ void setup()
 }
 
 void loop()
-{ 
+{     
     uint8_t data[5];
+    float voltage;
 
-    // tx payload is our tx_msg_count (32bit)
-    data[0] = (tx_msg_count>>24)&0xFF;
-    data[1] = (tx_msg_count>>16)&0xFF;
-    data[2] = (tx_msg_count>>8)&0xFF;
-    data[3] = tx_msg_count&0xFF;        
-    data[4] = led_on;
-    
+      
     if (tx_delay_counter > 0)
     { // delay
       spin_wheely(120,20);
       u8g2.setCursor(95,20);  
-      u8g2.printf("%03d", tx_delay_counter);            
+      u8g2.printf("%03d", tx_delay_counter);     
+      voltage = getBatteryVoltageFloat(bat_int);  
+      u8g2.setCursor(0,35);      
+      u8g2.printf("Bat: %1.3fV", voltage);     
       u8g2.sendBuffer();      
       delay(1000);
       tx_delay_counter--;  
     }
     else
     { // action
+        bat_int = getBatteryVoltage(10);  
+        // measure battery        
+        data[0] = (bat_int>>8)&0xFF;
+        data[1] = bat_int&0xFF;    
+        // tx payload is our tx_msg_count (16bit)
+        data[2] = (tx_msg_count>>8)&0xFF;
+        data[3] = tx_msg_count&0xFF;        
+        data[4] = led_on;
+
         tx_delay_counter = TX_DELAY_SEC;
         if ( ttn.sendBytes(data, 5, 1, false) )
         {      
